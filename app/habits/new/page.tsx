@@ -1,49 +1,79 @@
 "use client";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function Page() {
-  function FormSubmitHandler(e: React.FormEvent<HTMLFormElement>) {
-    // e.preventDefault() stops the page from refreshing after the form is submitted
-    e.preventDefault();
+  const router = useRouter();
+  
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/register");
+    }
+  }, [router]);
 
-    const formData = new FormData(e.currentTarget);
-    const formData_habit = formData.get("habit");
-    const formData_why = formData.get("why");
-    const formData_timeCommit = formData.get("timeCommit");
-    const formData_repeat = formData.get("repeatedly");
-    const formData_commitcheck = formData.get("commit");
+  // Form states
+  const [inputHabit, setInputHabit] = useState("");
+  const [inputWhy, setInputWhy] = useState("");
+  const [inputTimeCommit, setInputTimeCommit] = useState("");
+  const [inputDurationCommit, setinputDurationCommit] = useState("");
+  
+  // 1. ADDED STATE FOR CHECKBOX
+  const [isChecked, setIsChecked] = useState(false);
 
+  async function FormSubmitHandler() {
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/habits/addhabit`;
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          habit: inputHabit,
+          why: inputWhy,
+          repeat: inputDurationCommit,
+          repeatInDuration: inputTimeCommit,
+        }),
+      });
 
-    // object creation for habits
-    const habitObject = JSON.parse(localStorage.getItem("habit") || "[]");
-    habitObject.push({
-      id: crypto.randomUUID(),
-      habit: formData_habit,
-      why: formData_why,
-      commitment: formData_timeCommit,
-      repeat: formData_repeat,
-      commited: formData_commitcheck,
-      checkIn : false, //just added
-    });
+      if (!response.ok) {
+        console.log(`Response status ${response.status}`);
+        throw new Error(`Response status ${response.status}`);
+      }
+      const result = await response.json();
+      console.log(result);
 
-    localStorage.setItem("habit", JSON.stringify(habitObject));
-    console.log(habitObject);
-
-    e.currentTarget.reset();
-
-    // window.location.href = "/" //what this does is after successfully entering a new habit it redirects the user to the dashboard
-    // but in terms of react we use the nextjs router to navigate between pages
+      // Clear the form data upon success
+      setInputHabit("");
+      setInputWhy("");
+      setInputTimeCommit("");
+      setinputDurationCommit("");
+      
+      // 3. RESET THE CHECKBOX STATE TO FALSE
+      setIsChecked(false);
+      
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-8 bg-gradient-to-br from-cyan-400 via-cyan-600 to-cyan-800">
-      {/* new container */}
-      <div className="border p-6 md:p-10 items-center justify-center bg-gray-600 text-white w-full max-w-lg mx-auto">
+    <div className="flex flex-col items-center justify-center min-h-screen py-8 bg-gradient-to-br from-cyan-400 via-cyan-600 to-cyan-800 ">
+      <div className="border p-6 md:p-10 items-center justify-center bg-gray-600 text-white w-full max-w-lg mx-auto rounded-2xl">
         <div className="text-center p-5">
           <h1 className="text-2xl md:text-4xl font-bold">Welcome to Pixzar!</h1>
-          <p className="text-lg">Write and we would track it</p>
+          <p className="text-xl">Write and we would track it</p>
         </div>
-        <form onSubmit={FormSubmitHandler} className="flex flex-col gap-4">
-          {/* first input div */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            FormSubmitHandler();
+          }}
+          className="flex flex-col gap-4"
+        >
+          {/* Habit input */}
           <div className="flex flex-col gap-1.5">
             <label htmlFor="habit">Your new Habit</label>
             <input
@@ -52,10 +82,13 @@ export default function Page() {
               id="habit"
               placeholder="Habit"
               required
-              className="w-full border"
+              value={inputHabit}
+              onChange={(e) => setInputHabit(e.target.value)}
+              className="w-full border p-2 bg-gray-700 text-white placeholder-gray-400 rounded-md focus:ring-2 focus:ring-cyan-400 focus:outline-cyan-700"
             />
           </div>
-          {/* 2nd input div  */}
+          
+          {/* Why input */}
           <div className="flex flex-col gap-1.5">
             <label htmlFor="why">Why are you doing this?</label>
             <input
@@ -64,11 +97,13 @@ export default function Page() {
               name="why"
               placeholder="Your Why?"
               required
-              className="w-full border"
+              value={inputWhy}
+              onChange={(e) => setInputWhy(e.target.value)}
+              className="w-full border p-2 bg-gray-700 text-white placeholder-gray-400 rounded-md focus:ring-2 focus:ring-cyan-400 focus:outline-cyan-700"
             />
           </div>
 
-          {/* 3rd input div */}
+          {/* Time commitment select */}
           <div className="flex flex-col gap-1.5">
             <label htmlFor="timeCommit">
               How much time would you like to commit to this habit
@@ -77,7 +112,9 @@ export default function Page() {
               name="timeCommit"
               id="timeCommit"
               required
-              className="w-full border text-white bg-gray-600"
+              value={inputTimeCommit}
+              onChange={(e) => setInputTimeCommit(e.target.value)}
+              className="w-full border p-2 bg-gray-700 text-white placeholder-gray-400 rounded-md focus:ring-2 focus:ring-cyan-400 focus:outline-cyan-700"
             >
               <option value="">Select Daily commitment</option>
               <option value="30">30mins</option>
@@ -89,8 +126,7 @@ export default function Page() {
             </select>
           </div>
 
-          {/* 4th input div */}
-
+          {/* Repeat select */}
           <div className="flex flex-col gap-1.5">
             <label htmlFor="repeatedly">
               Do you want to repeat this habit?
@@ -98,7 +134,10 @@ export default function Page() {
             <select
               name="repeatedly"
               id="repeatedly"
-              className="w-full border  text-white bg-gray-600"
+              className="w-full border p-2 bg-gray-700 text-white placeholder-gray-400 rounded-md focus:ring-2 focus:ring-cyan-400 focus:outline-cyan-700"
+              required
+              value={inputDurationCommit}
+              onChange={(e) => setinputDurationCommit(e.target.value)}
             >
               <option value="">Select a duration</option>
               <option value="daily">Daily</option>
@@ -107,13 +146,25 @@ export default function Page() {
             </select>
           </div>
 
-          {/* 5th input div */}
-          <div className="items-center flex border gap-1.5 my-4">
-            <input type="checkbox" name="commit" id="commit" required />
-            <label htmlFor="commit">I commit to building this Habit</label>
+          {/* 2. CONTROLLED CHECKBOX ELEMENT */}
+          <div className="items-center flex border gap-1.5 my-4 p-2 bg-gray-700 text-white placeholder-gray-400 rounded-md">
+            <input 
+              type="checkbox" 
+              name="commit" 
+              id="commit" 
+              required 
+              checked={isChecked}
+              onChange={(e) => setIsChecked(e.target.checked)}
+            />
+            <label htmlFor="commit" className="cursor-pointer select-none">
+              I commit to building this Habit
+            </label>
           </div>
 
-          <button type="submit" className="border rounded-md py-2 mt-2 hover:bg-gray-500">
+          <button
+            type="submit"
+            className="border rounded-md py-2 mt-2 hover:bg-gray-500"
+          >
             Add Habit
           </button>
         </form>

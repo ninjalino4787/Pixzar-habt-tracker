@@ -1,97 +1,142 @@
 "use client";
 import HabitBarChart from "@/app/components/HabitBarChart";
 import MotivationShufflePage from "@/app/components/MotivationShuffle";
-// import { use } from "react";
-import { useLocalStorage } from "@/app/customHooks/uselocalstorage/page";
-import { use, useEffect, useState } from "react";
-// import { useParams } from "next/navigation";
+import React, { use, useEffect, useState } from "react";
 
 interface Habit {
-  id: string;
-  name: string;
-  isCompleted: boolean; // Add whatever other fields your habits have
+  _id: string;
   habit: string;
   why: string;
   commitment: string;
   repeat: string;
-  commited: string;
-  checkIn: boolean;
 }
 
-interface CheckIN {
-  timeStamps: string;
+interface CheckIn {
+  _id: string;
   habitId: string;
-  date: string;
+  userId: string;
+  createdAt: string;
 }
 
 export default function HabitDetailpage({
   params,
 }: {
-  params: Promise<{ habitId: string }>; //was id instead of habitId in this line
+  params: Promise<{ habitId: string }>;
 }) {
-  // unwrap the id from the url
   const resolvedParams = use(params);
   const id = resolvedParams.habitId;
 
-  const [allHabits, setAllHabits] = useLocalStorage<Habit[]>("habit", []);
-  //the localstorage checkin part
-
-  const [clicked, setClicked] = useState<boolean>(false);
-
-  const CheckInFunction = (): void => {
-    const checkInKey = JSON.parse(localStorage.getItem("checkIn") || "[]");
-    checkInKey.push({
-      habitId: id,
-      date: new Intl.DateTimeFormat("en-US", { dateStyle: "long" }).format(
-        new Date(),
-      ),
-    });
-
-    localStorage.setItem("checkIn", JSON.stringify(checkInKey));
-    setClicked(true);
-    // console.log(Math.round((Math.random()*10)))
-  };
+  const [habitDisplay, setHabitDisplay] = useState<Habit | null>(null);
+  const [checked, setChecked] = useState<boolean>(false);
 
   useEffect(() => {
-    const today = new Intl.DateTimeFormat("en-US", {
-      dateStyle: "long",
-    }).format(new Date());
-    const readCheckIn: CheckIN[] = JSON.parse(
-      localStorage.getItem("checkIn") || "[]",
-    );
-    const alreadyCheckedIn = readCheckIn.some(
-      (c) => c.habitId === id && c.date === today,
-    );
-    alreadyCheckedIn ? setClicked(true) : setClicked(false);
-  }, []);
+    async function HabitDetailDisplay() {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/habits/getHabits`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
 
-  const foundHabit = allHabits.find((h) => h.id === id);
+        const result = await response.json();
 
-  {
-    if (!foundHabit) return <div className="p-8">Loading habit...</div>;
+        if (!response.ok) {
+          throw new Error(`Response Error ${response.status}`);
+        }
+
+        const foundHabit = result.find((h: Habit) => h._id === id);
+        setHabitDisplay(foundHabit);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    async function checkTodayCheckIn() {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/checkIn/${id}/getCheckIns`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          },
+        );
+
+        const result: CheckIn[] = await response.json();
+
+        if (!response.ok) {
+          throw new Error(`Response Error ${response.status}`);
+        }
+
+        const today = new Date().toDateString();
+        const alreadyCheckedIn = result.some(
+          (c) => new Date(c.createdAt).toDateString() === today,
+        );
+
+        if (alreadyCheckedIn) setChecked(true);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    HabitDetailDisplay();
+    checkTodayCheckIn();
+  }, [id]);
+
+  async function checkInFunction() {
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/checkIn/${id}/checkInHabit`;
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          checker: true,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(`Response Error ${response.status}`);
+      }
+
+      setChecked(true);
+      console.log(result);
+    } catch (error) {
+      console.error(error);
+    }
   }
+
+  if (!habitDisplay) return <p>Loading Habits</p>;
 
   return (
     <div className="p-4 md:p-8 min-h-screen bg-gradient-to-br from-white via-cyan-200 to-blue-100">
       <h1 className="text-2xl md:text-4xl font-bold p-6">
-        Habit : {foundHabit.habit.toUpperCase()}
+        Habit: {habitDisplay.habit.toUpperCase()}
       </h1>
       <div className="mt-10 flex flex-col gap-y-2">
-        <p className="text-gray-600  text-xl">Your Why: {foundHabit.why}</p>
-        <p className="text-gray-600  text-xl">
-          Your Commitment: {foundHabit.commitment}mins {foundHabit.repeat}
+        <p className="text-gray-600 text-xl">Your Why: {habitDisplay.why}</p>
+        <p className="text-gray-600 text-xl">
+          Your Commitment: {habitDisplay.commitment}mins {habitDisplay.repeat}
         </p>
         <button
-          className=" text-lg md:text-2xl border rounded-md mt-2 px-4 py-2 hover:cursor-pointer w-full md:w-fit"
-          onClick={CheckInFunction}
+          className="text-lg md:text-2xl border rounded-md mt-2 px-4 py-2 hover:cursor-pointer w-full md:w-fit"
+          onClick={checkInFunction}
+          disabled={checked}
         >
-          {clicked ? <p>Check In successful ✅</p> : <p>Check In</p>}
+          {checked ? <p>Check In successful ✅</p> : <p>Check In</p>}
         </button>
         <h2>Fun Facts about people with good habits 👇</h2>
-        <MotivationShufflePage/>
-        <HabitBarChart/>
+        <MotivationShufflePage />
+        <HabitBarChart habitId={id}/>
       </div>
     </div>
   );
 }
-

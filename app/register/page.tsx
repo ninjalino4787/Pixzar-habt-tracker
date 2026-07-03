@@ -111,7 +111,7 @@ export default function Page() {
             <div className="p-5 text-center">
               {/* <h1 className="text-sm font-bold md:text-md ">Login</h1> */}
               <h1 className="text-xl font-bold md:text-2xl mt-1">
-                Welcome Back to PIZAR - login
+                Welcome Back to PIZAR
               </h1>
               <h2 className="text-lg text-gray-200">
                 Back to building great habits

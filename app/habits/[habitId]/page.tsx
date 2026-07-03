@@ -114,7 +114,13 @@ export default function HabitDetailpage({
     }
   }
 
-  if (!habitDisplay) return <p>Loading Habits</p>;
+  if (!habitDisplay) return (
+     <div className="bg-gradient-to-br from-white via-cyan-200 to-blue-100 h-screen w-screen flex justify-center items-center ">
+          <div className="border-2 p-4 md:p-6 rounded-xl bg-gray-700 text-cyan-400 border-gray-400">
+            <p>Getting User&apos;s Habit...</p>
+          </div>
+        </div>
+  );
 
   return (
     <div className="p-4 md:p-8 min-h-screen bg-gradient-to-br from-white via-cyan-200 to-blue-100">

@@ -109,11 +109,11 @@ export default function Page() {
           <div className="flex flex-col gap-4">
             {/* Header Text */}
             <div className="p-5 text-center">
-              <h1 className="text-2xl font-bold md:text-4xl">Login</h1>
+              {/* <h1 className="text-sm font-bold md:text-md ">Login</h1> */}
               <h1 className="text-xl font-bold md:text-2xl mt-1">
-                Welcome Back to PIZAR
+                Welcome Back to PIZAR - login
               </h1>
-              <h2 className="text-lg text-gray-200 mt-2">
+              <h2 className="text-lg text-gray-200">
                 Back to building great habits
               </h2>
             </div>
@@ -172,14 +172,14 @@ export default function Page() {
           /* ========================================================
              REGISTER VIEW
              ======================================================== */
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
             {/* Header Text */}
-            <div className="p-5 text-center">
-              <h1 className="text-2xl font-bold md:text-4xl">REGISTER</h1>
+            <div className="p-2 text-center">
+              {/* <h1 className="text-2xl font-bold md:text-4xl">REGISTER</h1> */}
               <h1 className="text-xl font-bold md:text-2xl mt-1">
-                Welcome to PIZAR
+                Register to PIZAR
               </h1>
-              <h2 className="text-lg text-gray-200 mt-2">
+              <h2 className="text-lg text-gray-200">
                 Ready to build good habits?
               </h2>
             </div>
